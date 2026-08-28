@@ -15,7 +15,12 @@ public class SonarQubeService(HttpClient httpClient, IOptions<SonarQubeOptions> 
         int pullRequestNumber, IReadOnlyList<string> changedFilePaths)
     {
         var url = $"api/issues/search?componentKeys={Uri.EscapeDataString(_options.ProjectKey)}" +
-                  $"&pullRequest={pullRequestNumber}&resolved=false&ps=500";
+                  "&resolved=false&ps=500";
+
+        if (_options.UsePullRequestAnalysis)
+        {
+            url += $"&pullRequest={pullRequestNumber}";
+        }
 
         SonarIssuesSearchResponse? response;
         try
