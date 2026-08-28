@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using CodeReview.Api.Data;
 using CodeReview.Api.Options;
 using CodeReview.Api.Services;
@@ -28,9 +29,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddSingleton<IGitHubClient>(sp =>
 {
     var ghOptions = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<GitHubOptions>>().Value;
+    // Trim the token: a trailing newline picked up when the value was pasted or
+    // piped into configuration makes Octokit reject the Authorization header with
+    // an opaque "format of value is invalid" error that points nowhere near the cause.
     var client = new GitHubClient(new ProductHeaderValue("ai-augmented-code-review"))
     {
-        Credentials = new Credentials(ghOptions.AccessToken)
+        Credentials = new Credentials(ghOptions.AccessToken?.Trim())
     };
     return client;
 });
@@ -51,7 +55,12 @@ builder.Services.AddScoped<IOpenAiReviewService, OpenAiReviewService>();
 // ---- Orchestration ----
 builder.Services.AddScoped<ReviewOrchestrator>();
 
-builder.Services.AddControllers();
+// Serialise enums as their names, not their integer values. The dashboard's
+// types.ts declares them as string unions ("Minor" | "Major" | "Critical"), and
+// the default integer form makes severity.toLowerCase() throw in ReviewList.tsx.
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

@@ -26,6 +26,28 @@ public class GitHubCommentRendererTests
     }
 
     [Fact]
+    public void Render_AlwaysStartsWithTheCommentMarker()
+    {
+        // The marker is what lets GitHubService find and update its own previous
+        // comment on a re-run, instead of posting a second one for every push.
+        var report = new ReviewReport
+        {
+            Owner = "moresand",
+            Repository = "demo-repo",
+            PullRequestNumber = 1,
+            HeadSha = "abc",
+            GeneratedAtUtc = DateTime.UtcNow,
+            Summary = "All good.",
+            RequirementCoverage = [],
+            Findings = []
+        };
+
+        var markdown = GitHubCommentRenderer.Render(report);
+
+        Assert.StartsWith(GitHubCommentRenderer.CommentMarker, markdown);
+    }
+
+    [Fact]
     public void Render_WithFindings_ProducesMarkdownTableRow()
     {
         var report = new ReviewReport

@@ -10,10 +10,18 @@ namespace CodeReview.Core.Services;
 /// </summary>
 public static class GitHubCommentRenderer
 {
+    /// <summary>
+    /// Invisible HTML marker written as the first line of every generated comment.
+    /// It is what lets a later run find and update its own previous comment instead
+    /// of stacking a new one on the pull request for every pushed commit.
+    /// </summary>
+    public const string CommentMarker = "<!-- ai-augmented-code-review -->";
+
     public static string Render(ReviewReport report)
     {
         var sb = new StringBuilder();
 
+        sb.AppendLine(CommentMarker);
         sb.AppendLine("### 🤖 AI-Augmented Code Review");
         sb.AppendLine();
         sb.AppendLine("> This is an automated first-pass review. It does **not** replace a human " +

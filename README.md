@@ -24,7 +24,18 @@ Three guides, read in this order:
 - `.github/workflows/ci.yml` — build/test on every PR.
 - `sonar-project.properties` — SonarQube scanner configuration.
 - `scripts/` — trigger a review run directly (bypasses GitHub webhook
-  delivery/ngrok), useful for both testing and demos.
+  delivery/ngrok), useful for both testing and demos, plus the Postgres init
+  script that gives SonarQube its own database.
+
+## API endpoints
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/webhook/github` | GitHub webhook receiver (HMAC-verified, runs in background) |
+| `POST /api/reviews/run` | Run a review on demand — no webhook, no ngrok. Body: `{ "owner": "...", "repository": "...", "pullRequestNumber": 1 }`. Runs synchronously and returns the report |
+| `GET /api/reviews` | Recent reviews, consumed by the dashboard |
+| `GET /api/reviews/{id}` | A single review |
+| `GET /api/reviews/export.csv` | All reviews as CSV, one row per finding — the evaluation data set for objective 6 |
 
 ## Quickest possible start
 

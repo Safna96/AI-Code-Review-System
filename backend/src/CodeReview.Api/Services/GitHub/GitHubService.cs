@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using CodeReview.Core.Models;
+using CodeReview.Core.Services;
 using Octokit;
 
 namespace CodeReview.Api.Services.GitHub;
@@ -51,7 +52,40 @@ public partial class GitHubService(IGitHubClient client, ILogger<GitHubService> 
     public async Task PostReviewCommentAsync(string owner, string repository, int pullRequestNumber, string markdownComment)
     {
         // A pull request is addressable as an "issue" for general (non-inline) comments.
+        //
+        // The webhook fires again on every push to an open PR ("synchronize"), so creating
+        // a new comment each time would stack one review per commit. Instead, look for the
+        // comment this system left previously — identified by the invisible marker that
+        // GitHubCommentRenderer writes as the first line — and edit it in place.
+        var existing = await TryFindPreviousReviewCommentAsync(owner, repository, pullRequestNumber);
+        if (existing is not null)
+        {
+            await client.Issue.Comment.Update(owner, repository, existing.Id, markdownComment);
+            logger.LogInformation(
+                "Updated existing review comment {CommentId} on {Owner}/{Repository}#{PullRequestNumber}",
+                existing.Id, owner, repository, pullRequestNumber);
+            return;
+        }
+
         await client.Issue.Comment.Create(owner, repository, pullRequestNumber, markdownComment);
+    }
+
+    private async Task<IssueComment?> TryFindPreviousReviewCommentAsync(string owner, string repository, int pullRequestNumber)
+    {
+        try
+        {
+            var comments = await client.Issue.Comment.GetAllForIssue(owner, repository, pullRequestNumber);
+            return comments.LastOrDefault(c =>
+                c.Body?.Contains(GitHubCommentRenderer.CommentMarker, StringComparison.Ordinal) == true);
+        }
+        catch (ApiException ex)
+        {
+            // Listing comments is only an optimisation — if it fails, fall back to posting
+            // a fresh comment rather than losing the review entirely.
+            logger.LogWarning(ex, "Could not list existing comments on {Owner}/{Repository}#{PullRequestNumber}; will post a new comment",
+                owner, repository, pullRequestNumber);
+            return null;
+        }
     }
 
     private async Task<string?> TryFetchLinkedIssueAsync(string owner, string repository, string? pullRequestBody)

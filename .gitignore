@@ -59,6 +59,6 @@ docker-compose.override.yml
 *.temp
 coverage/
 .sonarqube/
-TESTING_GUIDE.md
-IMPLEMENTATION_GUIDE.md
 DEMO_SCRIPT.md
+IMPLEMENTATION_GUIDE.md
+TESTING_GUIDE.md
