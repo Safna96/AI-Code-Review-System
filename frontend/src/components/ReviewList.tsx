@@ -19,6 +19,24 @@ export function ReviewList({ reviews }: { reviews: ReviewReport[] }) {
             </h3>
             <time dateTime={review.generatedAtUtc}>{new Date(review.generatedAtUtc).toLocaleString()}</time>
           </header>
+
+          <p className="ticket-source">
+            {review.ticketSource === "ManualOverride"
+              ? "Ticket supplied manually"
+              : review.ticketSource === "GitHubIssue"
+                ? "Ticket from linked GitHub issue"
+                : "No ticket linked"}
+            {review.ticketUrl && (
+              <>
+                {" — "}
+                <a href={review.ticketUrl} target="_blank" rel="noreferrer">
+                  ticket
+                </a>
+              </>
+            )}
+            {review.modelName && <span className="model-tag">{review.modelName}</span>}
+          </p>
+
           <p className="summary">{review.summary}</p>
 
           {review.requirementCoverage.length > 0 && (

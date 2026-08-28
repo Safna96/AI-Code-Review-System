@@ -4,7 +4,7 @@ namespace CodeReview.Core.Models;
 /// Everything the review pipeline needs to know about a single pull request:
 /// where it came from, what it changes, and what it was supposed to implement.
 /// </summary>
-public class PullRequestContext
+public record PullRequestContext
 {
     public required string Owner { get; init; }
     public required string Repository { get; init; }
@@ -25,4 +25,14 @@ public class PullRequestContext
     public string? LinkedTicketDescription { get; init; }
 
     public IReadOnlyList<string> ChangedFilePaths { get; init; } = Array.Empty<string>();
+
+    /// <summary>Where <see cref="LinkedTicketDescription"/> came from.</summary>
+    public TicketSource TicketSource { get; init; } = TicketSource.None;
+
+    /// <summary>
+    /// Optional link to the ticket in whatever system owns it - a GitHub issue URL, or
+    /// a Jira browse URL pasted alongside manually-supplied requirements. Stored purely
+    /// as provenance; nothing is fetched from it.
+    /// </summary>
+    public string? TicketUrl { get; init; }
 }

@@ -121,3 +121,135 @@ body {
 .badge-minor { background: var(--minor); }
 .badge-major { background: var(--major); }
 .badge-critical { background: var(--critical); }
+
+/* ---- Manual run form (evaluation tool, not the primary entry point) ---- */
+
+.run-form {
+  border: 1px solid #d6dae0;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem 1.5rem;
+  margin-bottom: 2rem;
+  background: #fafbfc;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.run-form-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.run-form-heading h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* Labels this as a research instrument rather than the way the tool is normally
+   used - the webhook path is the product, this is for building the data set. */
+.run-form-badge {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: #e7eaee;
+  color: #55606c;
+}
+
+.run-form-note,
+.run-form-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: #666f7a;
+  line-height: 1.45;
+}
+
+.run-form label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.35rem;
+}
+
+.run-form input,
+.run-form textarea {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #ccd2d9;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.run-form textarea {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+  resize: vertical;
+}
+
+.run-form input:disabled,
+.run-form textarea:disabled {
+  background: #f0f2f4;
+  color: #8a939d;
+}
+
+.run-form-override {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 0 0.25rem;
+}
+
+.link-button {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0.4rem 0;
+  color: #2563a8;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.link-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.primary-button {
+  align-self: flex-start;
+  margin-top: 0.75rem;
+  padding: 0.5rem 1.1rem;
+  border: none;
+  border-radius: 5px;
+  background: #2563a8;
+  color: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.primary-button:disabled {
+  background: #a8b4c2;
+  cursor: not-allowed;
+}
+
+.ticket-source {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  color: #6b747e;
+}
+
+/* The model is configuration and changes between evaluation batches, so each card
+   states which one produced it rather than the page claiming a single model. */
+.model-tag {
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  background: #eef1f4;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: #55606c;
+}

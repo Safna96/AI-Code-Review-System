@@ -4,7 +4,7 @@ using CodeReview.Core.Models;
 namespace CodeReview.Core.Services;
 
 /// <summary>
-/// Builds the structured prompt sent to GPT-4o. Kept as pure string-building logic
+/// Builds the structured prompt sent to the LLM. Kept as pure string-building logic
 /// (no HTTP/SDK dependency) so it can be unit tested without calling OpenAI.
 /// </summary>
 public static class PromptBuilder

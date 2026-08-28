@@ -18,6 +18,9 @@ public static class ReviewReportMapper
         Summary = report.Summary,
         RequirementCoverageJson = JsonSerializer.Serialize(report.RequirementCoverage, JsonOptions),
         FindingsJson = JsonSerializer.Serialize(report.Findings, JsonOptions),
+        TicketSource = report.TicketSource.ToString(),
+        TicketUrl = report.TicketUrl,
+        ModelName = report.ModelName,
         CriticalCount = report.CriticalCount,
         MajorCount = report.MajorCount,
         MinorCount = report.MinorCount
@@ -32,6 +35,10 @@ public static class ReviewReportMapper
         GeneratedAtUtc = entity.GeneratedAtUtc,
         Summary = entity.Summary,
         RequirementCoverage = JsonSerializer.Deserialize<List<RequirementCoverageItem>>(entity.RequirementCoverageJson, JsonOptions) ?? new(),
-        Findings = JsonSerializer.Deserialize<List<ReviewFinding>>(entity.FindingsJson, JsonOptions) ?? new()
+        Findings = JsonSerializer.Deserialize<List<ReviewFinding>>(entity.FindingsJson, JsonOptions) ?? new(),
+        // Rows written before this column existed default to "None" rather than failing to load.
+        TicketSource = Enum.TryParse<TicketSource>(entity.TicketSource, out var source) ? source : CodeReview.Core.Models.TicketSource.None,
+        TicketUrl = entity.TicketUrl,
+        ModelName = entity.ModelName
     };
 }

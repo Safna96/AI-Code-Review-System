@@ -3,7 +3,7 @@ using CodeReview.Core.Models;
 namespace CodeReview.Core.Services;
 
 /// <summary>
-/// Merges SonarQube's static findings and GPT-4o's requirement-aware findings into a
+/// Merges SonarQube's static findings and the LLM's requirement-aware findings into a
 /// single prioritised <see cref="ReviewReport"/>. Pure logic, no I/O — this is the
 /// piece of the system most worth unit-testing thoroughly (see objective 6 of the
 /// proposal: measuring defects detected / quality of the aggregated report).
@@ -76,7 +76,10 @@ public static class ReportAggregator
             GeneratedAtUtc = generatedAtUtc,
             Summary = llmResult.Summary,
             RequirementCoverage = llmResult.RequirementCoverage,
-            Findings = prioritised
+            Findings = prioritised,
+            TicketSource = context.TicketSource,
+            TicketUrl = context.TicketUrl,
+            ModelName = llmResult.ModelName
         };
     }
 

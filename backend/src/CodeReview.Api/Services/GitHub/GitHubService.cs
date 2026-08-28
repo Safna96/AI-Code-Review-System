@@ -32,7 +32,7 @@ public partial class GitHubService(IGitHubClient client, ILogger<GitHubService> 
             diffBuilder.AppendLine(file.Patch);
         }
 
-        string? linkedTicket = await TryFetchLinkedIssueAsync(owner, repository, pullRequest.Body);
+        var (linkedTicket, ticketUrl) = await TryFetchLinkedIssueAsync(owner, repository, pullRequest.Body);
 
         return new PullRequestContext
         {
@@ -45,6 +45,8 @@ public partial class GitHubService(IGitHubClient client, ILogger<GitHubService> 
             BaseSha = pullRequest.Base.Sha,
             Diff = diffBuilder.ToString(),
             LinkedTicketDescription = linkedTicket,
+            TicketSource = linkedTicket is null ? TicketSource.None : TicketSource.GitHubIssue,
+            TicketUrl = ticketUrl,
             ChangedFilePaths = changedPaths
         };
     }
@@ -88,29 +90,29 @@ public partial class GitHubService(IGitHubClient client, ILogger<GitHubService> 
         }
     }
 
-    private async Task<string?> TryFetchLinkedIssueAsync(string owner, string repository, string? pullRequestBody)
+    private async Task<(string? Description, string? Url)> TryFetchLinkedIssueAsync(string owner, string repository, string? pullRequestBody)
     {
         if (string.IsNullOrWhiteSpace(pullRequestBody))
         {
-            return null;
+            return (null, null);
         }
 
         var match = LinkedIssueRegex().Match(pullRequestBody);
         if (!match.Success)
         {
-            return null;
+            return (null, null);
         }
 
         var issueNumber = int.Parse(match.Groups[3].Value);
         try
         {
             var issue = await client.Issue.Get(owner, repository, issueNumber);
-            return $"[#{issue.Number}] {issue.Title}\n\n{issue.Body}";
+            return ($"[#{issue.Number}] {issue.Title}\n\n{issue.Body}", issue.HtmlUrl);
         }
         catch (NotFoundException)
         {
             logger.LogWarning("Linked issue #{IssueNumber} referenced by PR body was not found", issueNumber);
-            return null;
+            return (null, null);
         }
     }
 }

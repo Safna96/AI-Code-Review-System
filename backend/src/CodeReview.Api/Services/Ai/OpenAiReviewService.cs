@@ -15,6 +15,7 @@ public class OpenAiReviewService : IOpenAiReviewService
     private readonly ILogger<OpenAiReviewService> _logger;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private const int MaxAttempts = 5;
+    private readonly string _modelName;
 
     public OpenAiReviewService(IOptions<OpenAiOptions> options, ILogger<OpenAiReviewService> logger)
     {
@@ -23,6 +24,7 @@ public class OpenAiReviewService : IOpenAiReviewService
         // A BaseUrl is only supplied when pointing at an OpenAI-compatible provider
         // other than OpenAI itself (Groq, Gemini's compatibility layer, OpenRouter,
         // a local Ollama). Left unset, the SDK's own default endpoint is used.
+        _modelName = options.Value.Model;
         var credential = new ApiKeyCredential(options.Value.ApiKey);
         if (string.IsNullOrWhiteSpace(options.Value.BaseUrl))
         {
@@ -57,7 +59,7 @@ public class OpenAiReviewService : IOpenAiReviewService
         var rawJson = completion.Content.Count > 0 ? completion.Content[0].Text : null;
         if (string.IsNullOrWhiteSpace(rawJson))
         {
-            _logger.LogWarning("GPT-4o returned an empty response for PR #{PullRequestNumber}", context.PullRequestNumber);
+            _logger.LogWarning("The LLM returned an empty response for PR #{PullRequestNumber}", context.PullRequestNumber);
             return FallbackResult();
         }
 
@@ -66,12 +68,13 @@ public class OpenAiReviewService : IOpenAiReviewService
             var result = JsonSerializer.Deserialize<LlmReviewResult>(rawJson, JsonOptions);
             if (result is not null)
             {
+                result.ModelName = _modelName;
                 return result;
             }
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Failed to parse GPT-4o JSON response for PR #{PullRequestNumber}: {Raw}",
+            _logger.LogError(ex, "Failed to parse the LLM JSON response for PR #{PullRequestNumber}: {Raw}",
                 context.PullRequestNumber, rawJson);
         }
 
@@ -129,10 +132,11 @@ public class OpenAiReviewService : IOpenAiReviewService
     /// Returned when the LLM call fails or its response cannot be parsed, so a single bad
     /// response degrades to "no AI findings" rather than crashing the whole review pipeline.
     /// </summary>
-    private static LlmReviewResult FallbackResult() => new()
+    private LlmReviewResult FallbackResult() => new()
     {
         Summary = "The AI reviewer could not produce a structured assessment for this change. " +
                   "Only static-analysis findings (if any) are shown below.",
-        Confidence = 0
+        Confidence = 0,
+        ModelName = _modelName
     };
 }

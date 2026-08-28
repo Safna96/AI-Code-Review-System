@@ -1,7 +1,7 @@
 namespace CodeReview.Core.Models;
 
 /// <summary>
-/// The structured output requested from GPT-4o for a single pull request review.
+/// The structured output requested from the LLM for a single pull request review.
 /// This shape is what the LLM is instructed (via the prompt's JSON schema) to return,
 /// so that the response can be parsed deterministically rather than free-text.
 /// </summary>
@@ -18,6 +18,14 @@ public class LlmReviewResult
 
     /// <summary>Overall confidence the model has in its own assessment, 0.0-1.0.</summary>
     public double Confidence { get; init; }
+
+    /// <summary>
+    /// The model that produced this result, e.g. "gemini-3.5-flash" or "gpt-4o".
+    /// Recorded per review because the model is configuration, and an evaluation run
+    /// across several batches may not use the same one throughout - without this the
+    /// results cannot be attributed to a model afterwards.
+    /// </summary>
+    public string? ModelName { get; set; }
 }
 
 public class RequirementCoverageItem

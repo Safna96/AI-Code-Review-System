@@ -49,7 +49,7 @@ builder.Services.AddHttpClient<ISonarQubeService, SonarQubeService>((sp, http) =
     http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", basicAuth);
 });
 
-// ---- OpenAI (GPT-4o) client ----
+// ---- LLM client (OpenAI SDK; endpoint and model come from configuration) ----
 builder.Services.AddScoped<IOpenAiReviewService, OpenAiReviewService>();
 
 // ---- Orchestration ----

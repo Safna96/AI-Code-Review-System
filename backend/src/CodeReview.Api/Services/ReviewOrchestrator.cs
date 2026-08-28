@@ -20,11 +20,42 @@ public class ReviewOrchestrator(
     AppDbContext dbContext,
     ILogger<ReviewOrchestrator> logger)
 {
-    public async Task<ReviewReport> RunAsync(string owner, string repository, int pullRequestNumber, CancellationToken cancellationToken = default)
+    /// <param name="ticketOverride">
+    /// Requirements supplied by hand, replacing whatever the pull request links to.
+    /// Used by the manual run form to test how the review responds to different
+    /// wordings of the same requirements. Null for the normal webhook-driven path.
+    /// </param>
+    /// <param name="ticketUrl">
+    /// Optional link recorded alongside a manual override - e.g. the Jira ticket the
+    /// requirements were copied from. Stored as provenance only; never fetched.
+    /// </param>
+    public async Task<ReviewReport> RunAsync(
+        string owner,
+        string repository,
+        int pullRequestNumber,
+        string? ticketOverride = null,
+        string? ticketUrl = null,
+        CancellationToken cancellationToken = default)
     {
         logger.LogInformation("Starting review for {Owner}/{Repository}#{PullRequestNumber}", owner, repository, pullRequestNumber);
 
         var context = await gitHubService.BuildPullRequestContextAsync(owner, repository, pullRequestNumber);
+
+        if (!string.IsNullOrWhiteSpace(ticketOverride))
+        {
+            logger.LogInformation("Using a manually supplied ticket description for {Owner}/{Repository}#{PullRequestNumber}",
+                owner, repository, pullRequestNumber);
+            context = context with
+            {
+                LinkedTicketDescription = ticketOverride,
+                TicketSource = TicketSource.ManualOverride,
+                TicketUrl = ticketUrl
+            };
+        }
+        else if (!string.IsNullOrWhiteSpace(ticketUrl))
+        {
+            context = context with { TicketUrl = ticketUrl };
+        }
 
         var sonarFindings = await sonarQubeService.GetFindingsForPullRequestAsync(pullRequestNumber, context.ChangedFilePaths);
 

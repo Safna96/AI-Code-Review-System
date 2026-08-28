@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using System.Text;
 using CodeReview.Api.Data;
 using CodeReview.Api.Services;
@@ -10,7 +11,7 @@ namespace CodeReview.Api.Controllers;
 /// <summary>Read-only API consumed by the React dashboard (Section 5, Step 8 of the design).</summary>
 [ApiController]
 [Route("api/reviews")]
-public class ReviewsController(
+public partial class ReviewsController(
     AppDbContext dbContext,
     ReviewOrchestrator orchestrator,
     ILogger<ReviewsController> logger) : ControllerBase
@@ -55,23 +56,65 @@ public class ReviewsController(
     [HttpPost("run")]
     public async Task<IActionResult> RunNow([FromBody] RunReviewRequest request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Owner) || string.IsNullOrWhiteSpace(request.Repository) || request.PullRequestNumber <= 0)
+        // Accept either a pasted pull request URL or the three parts separately. The URL
+        // is what people actually have to hand, and parsing it here means one field in
+        // the UI instead of three that can disagree with each other.
+        var owner = request.Owner;
+        var repository = request.Repository;
+        var number = request.PullRequestNumber;
+
+        if (!string.IsNullOrWhiteSpace(request.PullRequestUrl))
         {
-            return BadRequest(new { message = "owner, repository and a positive pullRequestNumber are all required." });
+            if (!TryParsePullRequestUrl(request.PullRequestUrl, out owner, out repository, out number))
+            {
+                return BadRequest(new { message = "Could not read a pull request from that URL. Expected something like https://github.com/owner/repo/pull/12" });
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repository) || number <= 0)
+        {
+            return BadRequest(new { message = "Provide either pullRequestUrl, or owner + repository + pullRequestNumber." });
         }
 
         try
         {
-            var report = await orchestrator.RunAsync(request.Owner, request.Repository, request.PullRequestNumber, cancellationToken);
+            var report = await orchestrator.RunAsync(
+                owner, repository, number,
+                request.TicketDescription, request.TicketUrl,
+                cancellationToken);
             return Ok(report);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Manual review run failed for {Owner}/{Repository}#{PullRequestNumber}",
-                request.Owner, request.Repository, request.PullRequestNumber);
+            logger.LogError(ex, "Manual review run failed for {Owner}/{Repository}#{PullRequestNumber}", owner, repository, number);
             return StatusCode(StatusCodes.Status502BadGateway, new { message = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Pulls owner, repository and number out of a GitHub pull request URL, e.g.
+    /// https://github.com/owner/repo/pull/12 (with or without scheme, trailing
+    /// segments like /files, or a query string).
+    /// </summary>
+    public static bool TryParsePullRequestUrl(string url, out string? owner, out string? repository, out int number)
+    {
+        owner = null;
+        repository = null;
+        number = 0;
+
+        var match = PullRequestUrlRegex().Match(url.Trim());
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        owner = match.Groups["owner"].Value;
+        repository = match.Groups["repo"].Value;
+        return int.TryParse(match.Groups["number"].Value, out number) && number > 0;
+    }
+
+    [GeneratedRegex(@"github\.com/(?<owner>[^/\s]+)/(?<repo>[^/\s]+)/pull/(?<number>\d+)", RegexOptions.IgnoreCase)]
+    private static partial Regex PullRequestUrlRegex();
 
     /// <summary>
     /// Exports every stored review as CSV, one row per finding, for the evaluation
@@ -102,6 +145,9 @@ public class ReviewsController(
                 Csv(report.Repository),
                 report.PullRequestNumber.ToString(CultureInfo.InvariantCulture),
                 Csv(report.HeadSha),
+                Csv(report.ModelName),
+                report.TicketSource.ToString(),
+                Csv(report.TicketUrl),
                 report.RequirementCoverage.Count.ToString(CultureInfo.InvariantCulture),
                 report.RequirementCoverage.Count(c => c.Covered).ToString(CultureInfo.InvariantCulture),
                 report.CriticalCount.ToString(CultureInfo.InvariantCulture),
@@ -150,4 +196,22 @@ public class ReviewsController(
 }
 
 /// <summary>Body of a manual <c>POST /api/reviews/run</c> request.</summary>
-public record RunReviewRequest(string Owner, string Repository, int PullRequestNumber);
+/// <param name="PullRequestUrl">Full GitHub pull request URL. Supply this or the three parts below.</param>
+/// <param name="Owner">Repository owner, when not supplying a URL.</param>
+/// <param name="Repository">Repository name, when not supplying a URL.</param>
+/// <param name="PullRequestNumber">Pull request number, when not supplying a URL.</param>
+/// <param name="TicketDescription">
+/// Requirements supplied by hand, replacing whatever the pull request links to. Leave
+/// empty for the normal behaviour of resolving "Closes #N" from the pull request body.
+/// </param>
+/// <param name="TicketUrl">
+/// Optional link to the ticket these requirements came from - a Jira browse URL, for
+/// instance. Recorded as provenance; nothing is fetched from it.
+/// </param>
+public record RunReviewRequest(
+    string? PullRequestUrl = null,
+    string? Owner = null,
+    string? Repository = null,
+    int PullRequestNumber = 0,
+    string? TicketDescription = null,
+    string? TicketUrl = null);

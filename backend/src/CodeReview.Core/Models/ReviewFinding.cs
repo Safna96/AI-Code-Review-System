@@ -23,7 +23,7 @@ public enum FindingSeverity
 
 /// <summary>
 /// A single, unified review finding produced after merging SonarQube's static
-/// analysis output with GPT-4o's requirement-aware reasoning. This is the type
+/// analysis output with the LLM's requirement-aware reasoning. This is the type
 /// that both the GitHub comment renderer and the dashboard operate on.
 /// </summary>
 public class ReviewFinding

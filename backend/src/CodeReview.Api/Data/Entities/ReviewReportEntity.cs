@@ -16,6 +16,14 @@ public class ReviewReportEntity
     public required string RequirementCoverageJson { get; set; }
     public required string FindingsJson { get; set; }
 
+    /// <summary>Name of the CodeReview.Core.Models.TicketSource value for this run.</summary>
+    public string TicketSource { get; set; } = "None";
+
+    public string? TicketUrl { get; set; }
+
+    /// <summary>The LLM that produced this review.</summary>
+    public string? ModelName { get; set; }
+
     public int CriticalCount { get; set; }
     public int MajorCount { get; set; }
     public int MinorCount { get; set; }
