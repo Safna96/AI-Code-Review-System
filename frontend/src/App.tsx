@@ -36,20 +36,10 @@ function App() {
 
       <RunReviewForm
         onComplete={(report) => {
-          // Put the new report at the top rather than refetching: a re-run of the same
-          // pull request replaces the previous entry so the list does not accumulate
-          // duplicates of one PR while the wording is being iterated on.
-          setReviews((current) => [
-            report,
-            ...current.filter(
-              (r) =>
-                !(
-                  r.owner === report.owner &&
-                  r.repository === report.repository &&
-                  r.pullRequestNumber === report.pullRequestNumber
-                ),
-            ),
-          ]);
+          // Prepend rather than refetch. ReviewList groups runs by pull request, so
+          // an earlier run of the same PR becomes history under it instead of being
+          // discarded - the comparison between runs is what the form is for.
+          setReviews((current) => [report, ...current]);
           setError(null);
         }}
       />

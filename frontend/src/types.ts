@@ -28,6 +28,11 @@ export interface ReviewReport {
   summary: string;
   requirementCoverage: RequirementCoverageItem[];
   findings: ReviewFinding[];
+  /** Computed server-side from findings; present in every API response. */
+  criticalCount: number;
+  majorCount: number;
+  minorCount: number;
+  uncoveredRequirementCount: number;
   ticketSource: TicketSource;
   ticketUrl?: string | null;
   modelName?: string | null;

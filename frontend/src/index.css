@@ -1,12 +1,27 @@
 :root {
-  --text: #3f3f46;
-  --text-h: #18181b;
-  --bg: #fafafa;
-  --border: #e4e4e7;
-  --card-bg: #ffffff;
-  --minor: #6b7280;
-  --major: #b45309;
-  --critical: #b91c1c;
+  /* Ink and surfaces */
+  --text: #52514e;
+  --text-h: #0b0b0b;
+  --muted: #7c7b77;
+  --bg: #f7f7f6;
+  --surface: #fcfcfb;
+  --border: #e3e3e0;
+  --border-strong: #cfcfcb;
+  --accent: #2a78d6;
+
+  /* Two categorical slots, used only to tell the two analysis engines apart.
+     Validated as a pair: CVD delta-E 13.0, normal-vision 16.3, both clear the
+     floors. Each badge still carries its name, so colour is never the only cue. */
+  --source-sonar: #2a78d6;
+  --source-llm: #4a3aa7;
+
+  /* Status scale - reserved for severity, never reused as a category colour.
+     Each level is also carried by a shape and a word, so the colour is never
+     the only thing distinguishing them. */
+  --critical: #d03b3b;
+  --major: #ec835a;
+  --minor: #fab219;
+  --good: #0ca30c;
 
   font: 16px/150% system-ui, "Segoe UI", Roboto, sans-serif;
   color: var(--text);
@@ -22,34 +37,52 @@ body {
 }
 
 #dashboard {
-  max-width: 1000px;
+  max-width: 1060px;
   margin: 0 auto;
   padding: 32px 24px 64px;
 }
 
+.app-header {
+  border-radius: 12px;
+  padding: 26px 26px 22px;
+  margin-bottom: 24px;
+  background:
+    radial-gradient(120% 140% at 0% 0%, #eaf1fb 0%, rgba(234, 241, 251, 0) 60%),
+    radial-gradient(110% 150% at 100% 0%, #f3eefb 0%, rgba(243, 238, 251, 0) 55%),
+    var(--surface);
+  border: 1px solid var(--border);
+}
+
 .app-header h1 {
-  font-size: 28px;
+  font-size: 27px;
   margin: 0 0 4px;
   color: var(--text-h);
+  letter-spacing: -0.015em;
 }
 
 .app-header p {
-  margin: 0 0 32px;
-  color: var(--text);
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
 }
 
 .empty-state,
 .error-state {
   padding: 24px;
-  border: 1px dashed var(--border);
+  border: 1px dashed var(--border-strong);
   border-radius: 8px;
   text-align: center;
+  background: var(--surface);
 }
 
 .error-state {
   color: var(--critical);
   border-color: var(--critical);
+  text-align: left;
+  font-size: 14px;
 }
+
+/* ---------------- Review cards ---------------- */
 
 .review-list {
   display: flex;
@@ -58,160 +91,509 @@ body {
 }
 
 .review-card {
-  background: var(--card-bg);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 20px;
+  padding: 20px 22px 22px;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 120ms ease;
 }
 
-.review-card header {
+.review-card:hover {
+  box-shadow: 0 1px 3px rgba(11, 11, 11, 0.06), 0 6px 18px rgba(11, 11, 11, 0.05);
+}
+
+/* A stripe in the worst severity present, so the state of a review reads before
+   any of its text does. The stat tiles below repeat it with icon and number, so
+   the stripe is reinforcement rather than the only signal. */
+.review-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+}
+
+.accent-critical::before { background: var(--critical); }
+.accent-major::before    { background: var(--major); }
+.accent-minor::before    { background: var(--minor); }
+.accent-clean::before    { background: var(--good); }
+
+.review-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 16px;
   flex-wrap: wrap;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
 }
 
-.review-card h3 {
-  margin: 0;
-  font-size: 18px;
+.review-title h3 {
+  margin: 0 0 2px;
+  font-size: 17px;
   color: var(--text-h);
 }
 
-.review-card time {
-  font-size: 13px;
-  color: var(--minor);
+.review-title h3 a {
+  color: inherit;
+  text-decoration: none;
 }
 
-.summary {
-  margin: 12px 0;
+.review-title h3 a:hover {
+  text-decoration: underline;
 }
+
+.pr-number {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.review-title time {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.review-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tag {
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  background: #fff;
+  white-space: nowrap;
+}
+
+.tag-manual {
+  border-color: #c9d9ef;
+  background: #eef4fc;
+  color: #2a5a94;
+}
+
+.tag-model {
+  border-color: #d8d4ea;
+  background: #f4f2fb;
+  color: #4a3aa7;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+
+.tag-link {
+  text-decoration: none;
+  color: var(--accent);
+}
+
+/* ---------------- Stat row ---------------- */
+
+/* Four counts with no shape worth plotting - tiles, not a chart. The number
+   stays in ink; the coloured mark beside the label carries the severity. */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 16px 0 4px;
+}
+
+.stat {
+  background: #fff;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 3px solid transparent;
+}
+
+/* Tinted to match the level they count. The number stays in ink - the tint and
+   the icon carry the identity, not the digits. */
+.stat-coverage { border-top-color: var(--good);     background: #f4fbf4; }
+.stat-critical { border-top-color: var(--critical); background: #fdf6f6; }
+.stat-major    { border-top-color: var(--major);    background: #fdf8f5; }
+.stat-minor    { border-top-color: var(--minor);    background: #fefbf1; }
+
+/* Coverage is a magnitude, so it gets a bar as well as the ratio. */
+.coverage-bar {
+  display: block;
+  height: 5px;
+  margin-top: 7px;
+  border-radius: 999px;
+  background: #dfe6df;
+  overflow: hidden;
+}
+
+.coverage-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--good);
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-h);
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.dot {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.dot-critical { color: var(--critical); }
+.dot-major    { color: var(--major); }
+.dot-minor    { color: var(--minor); }
+
+.summary {
+  margin: 14px 0 4px;
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+
+.review-section {
+  margin-top: 18px;
+}
+
+.review-section h4,
+.history-heading {
+  margin: 0 0 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.count-pill {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 6px;
+  font-size: 11px;
+  letter-spacing: 0;
+  color: var(--text);
+}
+
+/* ---------------- Requirement coverage ---------------- */
 
 .requirement-list {
   list-style: none;
   padding: 0;
-  margin: 0 0 12px;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
+
+.requirement-list li {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  font-size: 14px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
+.req-icon {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  margin-top: 1px;
+}
+
+.req-met .req-icon { background: var(--good); }
+.req-unmet .req-icon { background: var(--major); }
+
+.req-met {
+  border-color: #cfe8cf;
+  background: #f6fbf6;
+}
+
+.req-unmet {
+  border-color: #f0d3c4;
+  background: #fdf7f3;
+}
+
+.req-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.req-evidence {
+  font-size: 12.5px;
+  color: var(--muted);
+  font-style: normal;
+}
+
+/* ---------------- Findings table ---------------- */
 
 .findings-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 13.5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
 }
 
-.findings-table th,
-.findings-table td {
+.findings-table th {
   text-align: left;
   padding: 8px 10px;
+  background: var(--bg);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
   border-bottom: 1px solid var(--border);
 }
 
-.badge {
+.findings-table td {
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.findings-table tr:last-child td {
+  border-bottom: none;
+}
+
+.cell-location {
+  white-space: nowrap;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* Which engine produced the finding - the distinction the whole system rests on. */
+.source-tag {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  color: #fff;
+  white-space: nowrap;
+  border: 1px solid;
 }
 
-.badge-minor { background: var(--minor); }
-.badge-major { background: var(--major); }
-.badge-critical { background: var(--critical); }
+.source-sonar { color: #1f5da8; border-color: #c6dbf4; background: #eef5fd; }
+.source-llm   { color: #443499; border-color: #d3cdf0; background: #f2effc; }
 
-/* ---- Manual run form (evaluation tool, not the primary entry point) ---- */
+.cell-location {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid;
+}
+
+.badge-minor    { color: #7a5300; border-color: #f2dca6; background: #fdf6e4; }
+.badge-major    { color: #97441f; border-color: #f3ceba; background: #fdf1ea; }
+.badge-critical { color: #a32626; border-color: #eebcbc; background: #fceeee; }
+
+/* ---------------- Earlier runs ---------------- */
+
+.history {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.history-row {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  margin-bottom: 6px;
+  background: #fff;
+}
+
+.history-row.is-open {
+  border-color: var(--border-strong);
+}
+
+.history-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 11px;
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.history-toggle:hover {
+  background: var(--bg);
+  border-radius: 6px;
+}
+
+.history-caret {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.history-toggle time {
+  color: var(--text-h);
+  font-size: 13px;
+}
+
+.history-meta {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.history-meta code {
+  font-size: 11.5px;
+}
+
+.history-body {
+  padding: 4px 12px 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------------- Manual run form ---------------- */
+/* Deliberately not the primary entry point: in normal use the GitHub webhook
+   triggers a review and nobody types anything here. */
 
 .run-form {
-  border: 1px solid #d6dae0;
-  border-radius: 8px;
-  padding: 1.25rem 1.5rem 1.5rem;
-  margin-bottom: 2rem;
-  background: #fafbfc;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px 20px;
+  margin-bottom: 24px;
+  background: var(--surface);
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .run-form-heading {
   display: flex;
   align-items: baseline;
-  gap: 0.75rem;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .run-form-heading h2 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 16px;
+  color: var(--text-h);
 }
 
-/* Labels this as a research instrument rather than the way the tool is normally
-   used - the webhook path is the product, this is for building the data set. */
 .run-form-badge {
-  font-size: 0.72rem;
+  font-size: 10.5px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 0.15rem 0.5rem;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
   border-radius: 999px;
-  background: #e7eaee;
-  color: #55606c;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
 }
 
 .run-form-note,
 .run-form-hint {
-  margin: 0 0 0.5rem;
-  font-size: 0.85rem;
-  color: #666f7a;
-  line-height: 1.45;
+  margin: 4px 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .run-form label {
-  font-size: 0.85rem;
+  font-size: 12.5px;
   font-weight: 600;
-  margin-top: 0.35rem;
+  color: var(--text-h);
+  margin-top: 6px;
 }
 
 .run-form input,
 .run-form textarea {
-  padding: 0.5rem 0.6rem;
-  border: 1px solid #ccd2d9;
-  border-radius: 5px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 14px;
   width: 100%;
-  box-sizing: border-box;
+  background: #fff;
+}
+
+.run-form input:focus,
+.run-form textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: var(--accent);
 }
 
 .run-form textarea {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.82rem;
+  font-size: 12.5px;
   resize: vertical;
+  line-height: 1.5;
 }
 
 .run-form input:disabled,
 .run-form textarea:disabled {
-  background: #f0f2f4;
-  color: #8a939d;
+  background: var(--bg);
+  color: var(--muted);
 }
 
 .run-form-override {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.75rem 0 0.25rem;
+  gap: 4px;
+  padding: 10px 0 2px;
 }
 
 .link-button {
   align-self: flex-start;
   background: none;
   border: none;
-  padding: 0.4rem 0;
-  color: #2563a8;
+  padding: 8px 0 4px;
+  color: var(--accent);
   cursor: pointer;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 13px;
 }
 
 .link-button:hover:not(:disabled) {
@@ -220,36 +602,23 @@ body {
 
 .primary-button {
   align-self: flex-start;
-  margin-top: 0.75rem;
-  padding: 0.5rem 1.1rem;
+  margin-top: 12px;
+  padding: 9px 18px;
   border: none;
-  border-radius: 5px;
-  background: #2563a8;
+  border-radius: 6px;
+  background: var(--accent);
   color: #fff;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
 }
 
+.primary-button:hover:not(:disabled) {
+  background: #2265b8;
+}
+
 .primary-button:disabled {
-  background: #a8b4c2;
+  background: #b6c2d0;
   cursor: not-allowed;
-}
-
-.ticket-source {
-  margin: 0 0 0.5rem;
-  font-size: 0.78rem;
-  color: #6b747e;
-}
-
-/* The model is configuration and changes between evaluation batches, so each card
-   states which one produced it rather than the page claiming a single model. */
-.model-tag {
-  margin-left: 0.5rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: 3px;
-  background: #eef1f4;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.72rem;
-  color: #55606c;
 }
